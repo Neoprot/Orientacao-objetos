@@ -10,7 +10,7 @@ classe Ponto{
 classe Linha{
     Ponto ponto1 = [x1, y1]
     Ponto ponto2 = [x2, y2]
-    int tam;
+    inteiro tam
 
     construtor cria_linha(ponto1, ponto2){
         this.ponto1 = ponto1
@@ -25,21 +25,32 @@ classe Linha{
 classe Circulo{
     Ponto centro = [x, y]
     inteiro raio
+    inteiro protegido area
 
     construtor cria_circulo(centro, raio){
         this.centro = centro
         this.raio = raio
+    }
+
+    metodo getArea(){
+        area = 3.14*exp(raio,2)
+        return area 
     }
 }
 
 classe Retangulo{
     Ponto pontoOrigem = [x, y]
     inteiro altura, comprimento
+    inteiro protegido area
 
     construtor criaRetangulo(pontoOrigem, altura, comprimento){
         this.pontoOrigem = pontoOrigem
         this.altura = altura
         this.comprimento = comprimento
+    }
+
+    metodo getArea(){
+        return altura * comprimento
     }
 }
 
@@ -47,6 +58,7 @@ classe Triangulo{
     Ponto ponto1 = [x1, y1]
     Ponto ponto2 = [x2, y2]
     Ponto ponto3 = [x3, y3]
+    inteiro protegido area 
     Se (linha().getTamanhoLinha(ponto1,ponto2) + linha().getTamanhoLinha(ponto2,ponto3) > linha().getTamanhoLinha(ponto1,ponto3) ou linha().getTamanhoLinha(ponto2,ponto3) + linha().getTamanhoLinha(ponto1,ponto3) > linha().getTamanhoLinha(ponto1,ponto2))
     {
         construtor cria_triangulo(ponto1, ponto2, ponto3)
@@ -57,6 +69,9 @@ classe Triangulo{
             Linha().criaLinha(ponto1,ponto2)
             Linha().criaLinha(ponto2,ponto3)
             Linha().criaLinha(ponto1,ponto3)
+        }
+
+        metodo getArea(){
         }
     } senao {
         escreva("Não é possível criar um triangulo com esses pontos")
