@@ -78,7 +78,7 @@ classe Triangulo{
     }
 }
 
-classe Principal:
+classe Principal{
 
     Ponto.cria_ponto(2, 3)
 
@@ -89,6 +89,8 @@ classe Principal:
     Retangulo.cria_retangulo([4, 3], 2, 4)
 
     Triangulo.cria_triangulo([2, 4], [6, 5], [7, 2])
+
+}
 
 
 
