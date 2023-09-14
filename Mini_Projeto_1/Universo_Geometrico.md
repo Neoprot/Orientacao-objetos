@@ -1,0 +1,79 @@
+classe Ponto{
+    inteiro x, y
+
+    construtor cria_ponto(x, y){
+        this.x = x
+        this.y = y
+    }
+}
+
+classe Linha{
+    Ponto ponto1 = [x1, y1]
+    Ponto ponto2 = [x2, y2]
+    int tam;
+
+    construtor cria_linha(ponto1, ponto2){
+        this.ponto1 = ponto1
+        this.ponto2 = ponto2
+    }
+    metodo getTamanhoLinha(ponto1,ponto2) {
+        tam = raizqdrd(exp(ponto2.x - ponto1.x,2) + (ponto2.y - ponto2.y2))
+        returna tam;
+    }
+}
+
+classe Circulo{
+    Ponto centro = [x, y]
+    inteiro raio
+
+    construtor cria_circulo(centro, raio){
+        this.centro = centro
+        this.raio = raio
+    }
+}
+
+classe Retangulo{
+    Ponto pontoOrigem = [x, y]
+    inteiro altura, comprimento
+
+    construtor criaRetangulo(pontoOrigem, altura, comprimento){
+        this.pontoOrigem = pontoOrigem
+        this.altura = altura
+        this.comprimento = comprimento
+    }
+}
+
+classe Triangulo{
+    Ponto ponto1 = [x1, y1]
+    Ponto ponto2 = [x2, y2]
+    Ponto ponto3 = [x3, y3]
+    Se (linha().getTamanhoLinha(ponto1,ponto2) + linha().getTamanhoLinha(ponto2,ponto3) > linha().getTamanhoLinha(ponto1,ponto3) ou linha().getTamanhoLinha(ponto2,ponto3) + linha().getTamanhoLinha(ponto1,ponto3) > linha().getTamanhoLinha(ponto1,ponto2))
+    {
+        construtor cria_triangulo(ponto1, ponto2, ponto3)
+        {
+            this.ponto1 = ponto1
+            this.ponto2 = ponto2
+            this.ponto3 = ponto3
+            Linha().criaLinha(ponto1,ponto2)
+            Linha().criaLinha(ponto2,ponto3)
+            Linha().criaLinha(ponto1,ponto3)
+        }
+    } senao {
+        escreva("Não é possível criar um triangulo com esses pontos")
+    }
+}
+
+classe Principal:
+
+    Ponto.cria_ponto(2, 3)
+
+    Linha.cria_linha([3,4], [5,6])
+
+    Circulo.cria_circulo([7, 8], 2)
+
+    Retangulo.cria_retangulo([4, 3], 2, 4)
+
+    Triangulo.cria_triangulo([2, 4], [6, 5], [7, 2])
+
+
+
