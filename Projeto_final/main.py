@@ -1,174 +1,210 @@
+import time
 import pygame
 from pygame.locals import *
-import random
-# colors
-gray = (100, 100, 100)
-green = (76, 208, 56)
-red = (200, 0, 0)
-white = (255, 255, 255)
-yellow = (255, 232, 0)
+from utils import draw_car, move_player, scale_image, blit_text_center
+from models.Vehicle import Scootermoto, Custommoto, Sportmoto, BotVehicle
+from models.Camera import CameraGroup
+from models.Button import Button
 
+TRACK = pygame.image.load("images/lvl1.png")
+MENU = pygame.image.load("images/menu.jpeg")
+
+# screen size
+SCREE_SIZE = (600, 800)
+
+# colors
+GREEN = (76, 208, 56)
+RED = (200, 0, 0)
 
 # window properties
-width = 500
-height = 500
-screen_size = (width, height)
 
-# road and marker sizes
-road_width = 300
-marker_width = 10
-marker_height = 50
+WIDTH, HEIGHT = TRACK.get_width(), TRACK.get_height()
+WIN = pygame.display.set_mode((WIDTH, 800))
 
-# lane coordinates
-left_lane = 150
-center_lane = 250
-right_lane = 350
-lanes = [left_lane, center_lane, right_lane]
-
-# road and edge markers
-road = (100, 0, road_width, height)
-left_edge_marker = (95, 0, marker_width, height)
-right_edge_marker = (395, 0, marker_width, height)
 
 # player's starting coordinates
-player_x = 250
-player_y = 400
+player_x = 100
+player_y = HEIGHT - 100
 
-class Vehicle(pygame.sprite.Sprite):
-    def __init__(self, image, x, y):
-        super().__init__()
-        image_scale = 45 / image.get_rect().width
-        new_width = image.get_rect().width * image_scale
-        new_height = image.get_rect().height * image_scale
-        self.image = pygame.transform.scale(image, (new_width, new_height))
-        self.rect = self.image.get_rect()
-        self.rect.center = [x, y]
+class GameInfo:
+    # LEVELS = 10
 
-class PlayerVehicle(Vehicle):
-    def __init__(self, x, y):
-        image = pygame.image.load('images/car.png')
-        super().__init__(image, x, y)
+    def __init__(self, level=1):
+        self.level = level
+        self.started = False
+        self.level_start_time = 0
 
-class Game:
+    # def next_level(self):
+    #     self.level += 1
+    #     self.started = False
+
+    def reset(self):
+        self.level = 1
+        self.started = False
+        self.level_start_time = 0
+
+    # def game_finished(self):
+    #     return self.level > self.LEVELS
+
+    def start_level(self):
+        self.started = True
+        self.level_start_time = time.time()
+
+    def get_level_time(self):
+        return 0 if not self.started else round(time.time() - self.level_start_time)
+
+class Game():
     def __init__(self):
         pygame.init()
-        self.screen_size = (screen_size)
+        self.screen_size = SCREE_SIZE
+        self.camera_group = CameraGroup()
+        self.main_font = pygame.font.SysFont("comicsans", 44)
+        self.screen_size = (600, 800)
         self.screen = pygame.display.set_mode(self.screen_size)
-        pygame.display.set_caption('Car Game')
+        pygame.display.set_caption("ROAD RASH")
         self.clock = pygame.time.Clock()
         self.fps = 120
-        self.gameover = False
-        self.speed = 2
-        self.score = 0
-        self.player = PlayerVehicle(player_x, player_y)
-        self.player_group = pygame.sprite.Group()
-        self.player_group.add(self.player)
-        self.vehicle_group = pygame.sprite.Group()
+        self.level_clear = False
+        self.running = True
         self.vehicle_images = []
-        self.crash = pygame.image.load('images/crash.png')
-        self.crash_rect = self.crash.get_rect()
+        self.images = [(TRACK, (0, 0))]
+        
+
         # load the vehicle images
-        image_filenames = ['pickup_truck.png', 'semi_trailer.png', 'taxi.png', 'van.png']
+        image_filenames = ['pickup_truck.png', 'semi_trailer.png', 'taxi.png', 'van.png','moto2.png']
         self.vehicle_images = []
         for image_filename in image_filenames:
-            image = pygame.image.load('images/' + image_filename)
+            image = pygame.image.load(f'images/{image_filename}')
             self.vehicle_images.append(image)
+        self.bot_vehicle = BotVehicle(self.vehicle_images[4], player_x + 150, player_y, self.camera_group)
 
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == QUIT:
-                self.gameover = True
-            if event.type == KEYDOWN:
-                if event.key == K_LEFT and self.player.rect.center[0] > left_lane:
-                    self.player.rect.x -= 100
-                elif event.key == K_RIGHT and self.player.rect.center[0] < right_lane:
-                    self.player.rect.x += 100
+                self.running = False
+            if event.type == pygame.KEYDOWN and self.level_clear:
+                self.running = False
 
-    def update_game_state(self):
-        for vehicle in self.vehicle_group:
-            vehicle.rect.y += self.speed
-            if vehicle.rect.top >= self.screen_size[1]:
-                vehicle.kill()
-                self.score += 1
-                if self.score > 0 and self.score % 5 == 0:
-                    self.speed += 1
+        self.keys = pygame.key.get_pressed()
+        if self.player.bounce():
+            self.player.vel = -self.player.vel
+        move_player(self.player, self.keys)
 
-        if pygame.sprite.spritecollide(self.player, self.vehicle_group, True):
-            self.gameover = True
-            self.crash_rect.center = [self.player.rect.center[0], self.player.rect.top]
+        
+
+    def draw_win_message(self, window):
+        if self.player.y < 50:
+            self.level_clear = True
+            win_font = pygame.font.SysFont("comicsans", 70)
+            win_text = win_font.render("YOU WIN!", 1, (0, 0, 0))
+            window.blit(MENU, (0, 0))
+            window.blit(win_text, (WIDTH/3 - win_text.get_width()/3, 300 - win_text.get_height()/2))
+            blit_text_center(WIN, self.main_font, "Press any key to close")
+
+    def moto_menu(self,window):
+        moto1_button = Button(GREEN, 50, 200, 200, 100, 'Sport')
+        moto2_button = Button(GREEN, 300, 200, 200, 100, 'Custom')
+        moto3_button = Button(GREEN, 200, 350, 200, 100, 'Scooter')
+        win_font = pygame.font.SysFont("comicsans", 60)
+        win_text = win_font.render("Escolha sua moto", 1, (0, 0, 0))
+
+        run = True
+        while run:
+            window.blit(MENU, (0, 0))
+            window.blit(win_text, (WIDTH/2.5 - win_text.get_width()/3, 100 - win_text.get_height()/2))
+            moto1_button.draw(self.screen)
+            moto2_button.draw(self.screen)
+            moto3_button.draw(self.screen)
+            pygame.display.update()
+
+            for event in pygame.event.get():
+                pos = pygame.mouse.get_pos()
+
+                if event.type == pygame.QUIT:
+                    run = False
+                    pygame.quit()
+                    quit()
+
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if moto1_button.is_over(pos):
+                        game_info.started = True
+                        run = False
+                        self.player = Sportmoto(player_x, player_y, self.camera_group)
+                    elif moto2_button.is_over(pos):
+                        game_info.started = True
+                        run = False
+                        self.player = Custommoto(player_x, player_y, self.camera_group)
+                    elif moto3_button.is_over(pos):
+                        game_info.started = True
+                        run = False
+                        self.player = Scootermoto(player_x, player_y, self.camera_group)
+
+    def start_menu(self,window):
+        start_button = Button(GREEN, 200, 200, 200, 100, 'Start')
+        history_button = Button(GREEN, 200, 400, 200, 100, 'History')
+        win_font = pygame.font.SysFont("comicsans", 70)
+        win_text = win_font.render("ROAD RASH", 1, (0, 0, 0))
+
+        run = True
+        while run:
+            window.blit(MENU, (0, 0))
+            window.blit(win_text, (WIDTH/2.5 - win_text.get_width()/3, 100 - win_text.get_height()/2))
+            start_button.draw(self.screen)
+            history_button.draw(self.screen)
+            pygame.display.update()
+
+            for event in pygame.event.get():
+                pos = pygame.mouse.get_pos()
+
+                if event.type == pygame.QUIT:
+                    run = False
+                    pygame.quit()
+                    quit()
+
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if start_button.is_over(pos):
+                        run = False
+                        self.moto_menu(self.screen)
+                    if history_button.is_over(pos):
+                        print('Clicked the history button')
+                        # Here you can add the code to show the history
+
 
     def render_game(self):
-        self.screen.fill(green)
-        pygame.draw.rect(self.screen, gray, road)
-        pygame.draw.rect(self.screen, yellow, left_edge_marker)
-        pygame.draw.rect(self.screen, yellow, right_edge_marker)
-        
-        lane_marker_move_y = 0
-        lane_marker_move_y += self.speed * 2
+        if not self.level_clear:
+            
+            # Draw the player
+            self.camera_group.box_target_camera(self.player)
+            draw_car(self.screen, self.player, self.images, self.camera_group.offset)
+            
+            # Draw the bot
+            self.bot_vehicle.draw(self.screen, self.camera_group.offset)
 
-        if lane_marker_move_y >= marker_height * 2:
-            lane_marker_move_y = 0
-        for y in range(marker_height * -2, height, marker_height * 2):
-            
-            pygame.draw.rect(self.screen, white, (left_lane + 45, y + lane_marker_move_y, marker_width, marker_height))
-            pygame.draw.rect(self.screen, white, (center_lane + 45, y + lane_marker_move_y, marker_width, marker_height))
-        self.player_group.draw(self.screen)
-        
-        if len(self.vehicle_group) < 2:
-        
-            add_vehicle = True
-            for vehicle in self.vehicle_group:
-                if vehicle.rect.top < vehicle.rect.height * 1.5:
-                    add_vehicle = False
-                
-            if add_vehicle:
-            
-                # select a random lane
-                lane = random.choice(lanes)
-            
-                # select a random vehicle image
-                image = random.choice(self.vehicle_images)
-                vehicle = Vehicle(image, lane, height / -2)
-                self.vehicle_group.add(vehicle)
-        
-        self.vehicle_group.draw(self.screen)
-        font = pygame.font.Font(pygame.font.get_default_font(), 16)
-        text = font.render('Score: ' + str(self.score), True, white)
-        text_rect = text.get_rect()
-        text_rect.center = (50, 400)
-        self.screen.blit(text, text_rect)
-        if self.gameover:
-            self.screen.blit(self.crash, self.crash_rect)
-            pygame.draw.rect(self.screen, red, (0, 50, width, 100))
-            text = font.render('Game over. Play again? (Enter Y or N)', True, white)
-            text_rect = text.get_rect()
-            text_rect.center = (width / 2, 100)
-            self.screen.blit(text, text_rect)
+            if self.keys[K_w]:
+                pygame.draw.rect(self.screen, RED, self.player.punch())
+            elif self.keys[K_s]:
+                pygame.draw.rect(self.screen, RED, self.player.kick())
+
         pygame.display.update()
 
     def run(self):
-        while not self.gameover:
+        while self.running:
+            
+            while not game_info.started:
+                self.start_menu(self.screen)
+                pygame.display.update()
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        break
+            
             self.handle_events()
-            self.update_game_state()
             self.render_game()
+            self.draw_win_message(self.screen)
             self.clock.tick(self.fps)
-
-        while self.gameover:
-            for event in pygame.event.get():
-                if event.type == QUIT:
-                    self.gameover = False
-                if event.type == KEYDOWN:
-                    if event.key == K_y:
-                        self.gameover = False
-                        self.speed = 2
-                        self.score = 0
-                        self.vehicle_group.empty()
-                        self.player.rect.center = [player_x, player_y]
-                    elif event.key == K_n:
-                        self.gameover = False
-
         pygame.quit()
 
-if __name__ == "__main__":
-    game = Game()
-    game.run()
+
+game_info = GameInfo()
+g = Game()
+g.run()
