@@ -5,6 +5,7 @@ from utils import draw_car, move_player, scale_image, blit_text_center
 from models.Vehicle import Scootermoto, Custommoto, Sportmoto, BotVehicle
 from models.Camera import CameraGroup
 from models.Button import Button
+import random
 
 TRACK = pygame.image.load("images/lvl1.png")
 MENU = pygame.image.load("images/menu.jpeg")
@@ -21,10 +22,10 @@ RED = (200, 0, 0)
 WIDTH, HEIGHT = TRACK.get_width(), TRACK.get_height()
 WIN = pygame.display.set_mode((WIDTH, 800))
 
-
 # player's starting coordinates
 player_x = 100
 player_y = HEIGHT - 100
+
 
 class GameInfo:
     # LEVELS = 10
@@ -53,6 +54,7 @@ class GameInfo:
     def get_level_time(self):
         return 0 if not self.started else round(time.time() - self.level_start_time)
 
+
 class Game():
     def __init__(self):
         pygame.init()
@@ -68,15 +70,20 @@ class Game():
         self.running = True
         self.vehicle_images = []
         self.images = [(TRACK, (0, 0))]
-        
+        self.final_position = 0
 
         # load the vehicle images
-        image_filenames = ['pickup_truck.png', 'semi_trailer.png', 'taxi.png', 'van.png','moto2.png']
+        image_filenames = ['pickup_truck.png', 'semi_trailer.png', 'taxi.png', 'van.png', 'moto2.png']
         self.vehicle_images = []
         for image_filename in image_filenames:
             image = pygame.image.load(f'images/{image_filename}')
             self.vehicle_images.append(image)
-        self.bot_vehicle = BotVehicle(self.vehicle_images[4], player_x + 150, player_y, self.camera_group)
+
+        self.bot_vehicles = []
+        for _ in range(5):
+            random_offset = random.randint(50, 450)
+            bot = BotVehicle(self.vehicle_images[4], player_x + random_offset, player_y, self.camera_group)
+            self.bot_vehicles.append(bot)
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -90,18 +97,21 @@ class Game():
             self.player.vel = -self.player.vel
         move_player(self.player, self.keys)
 
-        
-
     def draw_win_message(self, window):
         if self.player.y < 50:
+            positions = self.get_vehicle_positions()
+            for i, (x, y, t) in enumerate(positions):
+                if t == type(self.player) and self.final_position == 0 :
+                    self.final_position = i + 1
+                    self.write_data(self.final_position)
             self.level_clear = True
             win_font = pygame.font.SysFont("comicsans", 70)
             win_text = win_font.render("YOU WIN!", 1, (0, 0, 0))
             window.blit(MENU, (0, 0))
-            window.blit(win_text, (WIDTH/3 - win_text.get_width()/3, 300 - win_text.get_height()/2))
+            window.blit(win_text, (WIDTH / 3 - win_text.get_width() / 3, 300 - win_text.get_height() / 2))
             blit_text_center(WIN, self.main_font, "Press any key to close")
 
-    def moto_menu(self,window):
+    def moto_menu(self, window):
         moto1_button = Button(GREEN, 50, 200, 200, 100, 'Sport')
         moto2_button = Button(GREEN, 300, 200, 200, 100, 'Custom')
         moto3_button = Button(GREEN, 200, 350, 200, 100, 'Scooter')
@@ -111,7 +121,7 @@ class Game():
         run = True
         while run:
             window.blit(MENU, (0, 0))
-            window.blit(win_text, (WIDTH/2.5 - win_text.get_width()/3, 100 - win_text.get_height()/2))
+            window.blit(win_text, (WIDTH / 2.5 - win_text.get_width() / 3, 100 - win_text.get_height() / 2))
             moto1_button.draw(self.screen)
             moto2_button.draw(self.screen)
             moto3_button.draw(self.screen)
@@ -139,7 +149,7 @@ class Game():
                         run = False
                         self.player = Scootermoto(player_x, player_y, self.camera_group)
 
-    def start_menu(self,window):
+    def start_menu(self, window):
         start_button = Button(GREEN, 200, 200, 200, 100, 'Start')
         history_button = Button(GREEN, 200, 400, 200, 100, 'History')
         win_font = pygame.font.SysFont("comicsans", 70)
@@ -148,7 +158,7 @@ class Game():
         run = True
         while run:
             window.blit(MENU, (0, 0))
-            window.blit(win_text, (WIDTH/2.5 - win_text.get_width()/3, 100 - win_text.get_height()/2))
+            window.blit(win_text, (WIDTH / 2.5 - win_text.get_width() / 3, 100 - win_text.get_height() / 2))
             start_button.draw(self.screen)
             history_button.draw(self.screen)
             pygame.display.update()
@@ -169,16 +179,30 @@ class Game():
                         print('Clicked the history button')
                         # Here you can add the code to show the history
 
+    def get_vehicle_positions(self):
+        # Create a list of tuples containing vehicle and its y-coordinate
+        positions = [(self.player.x, self.player.y, type(self.player))]
+        positions.extend([(bot.x, bot.y, type(bot)) for bot in self.bot_vehicles])
+
+        # Sort the list based on y-coordinate in descending order
+        positions.sort(key=lambda x: x[1])
+
+        return positions
 
     def render_game(self):
         if not self.level_clear:
-            
+
             # Draw the player
             self.camera_group.box_target_camera(self.player)
-            draw_car(self.screen, self.player, self.images, self.camera_group.offset)
-            
+
+            bot_images = [(bot.image, (bot.x, bot.y)) for bot in self.bot_vehicles]
+            all_images = self.images + bot_images
+
+            draw_car(self.screen, self.player, all_images, self.camera_group.offset)
+
             # Draw the bot
-            self.bot_vehicle.draw(self.screen, self.camera_group.offset)
+            for bot in self.bot_vehicles:
+                bot.update_ai()
 
             if self.keys[K_w]:
                 pygame.draw.rect(self.screen, RED, self.player.punch())
@@ -189,7 +213,7 @@ class Game():
 
     def run(self):
         while self.running:
-            
+
             while not game_info.started:
                 self.start_menu(self.screen)
                 pygame.display.update()
@@ -197,12 +221,16 @@ class Game():
                     if event.type == pygame.QUIT:
                         pygame.quit()
                         break
-            
+
             self.handle_events()
             self.render_game()
             self.draw_win_message(self.screen)
             self.clock.tick(self.fps)
         pygame.quit()
+
+    def write_data(self, final_position):
+        with open('data.txt', 'a') as f:
+            f.write(f'{final_position}\n')
 
 
 game_info = GameInfo()

@@ -1,6 +1,7 @@
 import pygame
 import math
 from utils import blit_rotate_center
+import random
 
 class Vehicle(pygame.sprite.Sprite):
     def __init__(self, image, x, y, max_vel, rotation_vel, acceleration, group=None):
@@ -73,7 +74,31 @@ class BotVehicle(Vehicle):
         max_vel = 5
         rotation_vel = 1
         acceleration = 0.05
+        self.target_angle = random.randint(-15, 15)
         super().__init__(image, x, y, max_vel, rotation_vel, acceleration, group)
+
+    def update_ai(self):
+        self.steer_to_angle()
+        vel_offset = random.uniform(-(self.acceleration - 0.005), self.acceleration)
+        self.vel = max(self.vel + vel_offset, self.max_vel)
+
+        self.move()
+
+        if abs(self.angle - self.target_angle) < 1:
+            self.target_angle = random.randint(-15, 15)
+
+    def steer_to_angle(self):
+        angle_difference = self.target_angle - self.angle
+        angle_difference = (angle_difference + 180) % 360 - 180
+
+        if angle_difference > 0:
+            self.rotate(right=True)
+        elif angle_difference < 0:
+            self.rotate(left=True)
+
+        rotation_adjustment = min(abs(angle_difference) / 180, 1)
+        self.rotation_vel = self.rotation_vel * rotation_adjustment
+
 
 class Scootermoto(PlayerVehicle):
     def __init__(self, x, y, group):
