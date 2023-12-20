@@ -228,9 +228,9 @@ class Game():
             self.clock.tick(self.fps)
         pygame.quit()
 
-    def write_data(self, final_position):
-        with open('data.txt', 'a') as f:
-            f.write(f'{final_position}\n')
+    def write_data(self, r):
+        with open('data/history.txt', 'a') as archive:
+            archive.write(str(r) + '\n')
 
 
 game_info = GameInfo()
