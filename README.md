@@ -15,6 +15,6 @@ UMl do meu projeto para a disciplina Orientação a objetos
 
 Projeto programado em Python da [UML](https://github.com/douglassouzars/UNB-O.O/blob/master/Projeto_3/uml) do Douglas Souza ROAD RASH
 
-[Vídeo do projeto]()
+[Vídeo do projeto](https://youtu.be/3YL3YXRKYl8)
 
 Projeto feito apenas por mim Kauã Seichi (Neoprot no github)
